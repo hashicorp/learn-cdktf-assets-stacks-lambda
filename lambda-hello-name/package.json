@@ -1,0 +1,15 @@
+{
+  "name": "lambda-hello-name",
+  "version": "1.0.0",
+  "scripts": {
+    "compile": "tsc"
+  },
+  "author": "Terraform Education",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.76"
+  },
+  "dependencies": {
+    "typescript": "^4.3.2"
+  }
+}
