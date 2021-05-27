@@ -1,0 +1,9 @@
+{
+    "language": "csharp",
+    "app": "dotnet run -p MyTerraformStack.csproj",
+    "terraformProviders": [],
+    "terraformModules": [],
+    "context": {
+        {{futureFlags}}
+    }
+}

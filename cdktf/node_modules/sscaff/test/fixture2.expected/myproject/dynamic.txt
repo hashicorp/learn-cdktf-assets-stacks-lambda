@@ -1,0 +1,5 @@
+{
+  "boom": "_boom_",
+  "$base": "myproject",
+  "ext": "ext-myproject-_boom_"
+}

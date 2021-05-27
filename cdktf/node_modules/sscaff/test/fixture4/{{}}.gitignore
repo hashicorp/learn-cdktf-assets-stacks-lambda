@@ -1,0 +1,4 @@
+# this is a gitignore file we use the {{}} substitution
+# in the file name in order for it not to be treated as a .gitignore
+# in the parent project
+*.js

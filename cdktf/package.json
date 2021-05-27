@@ -1,0 +1,31 @@
+{
+  "name": "learn-terraform-cdktf-assets-stacks-lambda",
+  "version": "1.0.0",
+  "main": "main.js",
+  "types": "main.ts",
+  "license": "MPL-2.0",
+  "private": true,
+  "scripts": {
+    "get": "cdktf get",
+    "build": "cdktf get && tsc",
+    "synth": "cdktf synth",
+    "compile": "tsc --pretty",
+    "watch": "tsc -w",
+    "test": "echo ok",
+    "upgrade": "npm i cdktf@latest cdktf-cli@latest",
+    "upgrade:next": "npm i cdktf@next cdktf-cli@next"
+  },
+  "engines": {
+    "node": ">=10.12"
+  },
+  "dependencies": {
+    "cdktf": "^0.0.19",
+    "constructs": "^3.3.75"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.76",
+    "@types/node": "^15.6.1",
+    "cdktf-cli": "^0.0.19",
+    "typescript": "^4.3.2"
+  }
+}

@@ -1,0 +1,3 @@
+boom=_boom_
+ext=ext-myproject-_boom_
+base=myproject
