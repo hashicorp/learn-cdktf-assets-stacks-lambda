@@ -2,25 +2,11 @@ import * as path from "path";
 import { Construct } from "constructs";
 import { App, TerraformStack, TerraformAsset, AssetType, TerraformOutput } from "cdktf";
 
-// AWS specific imports
-import { AwsProvider } from "./.gen/providers/aws/aws-provider";
-import { S3Bucket } from "./.gen/providers/aws/s3-bucket";
-import { S3BucketObject } from "./.gen/providers/aws/s3-bucket-object";
-import { IamRole } from "./.gen/providers/aws/iam-role";
-import { LambdaFunction } from "./.gen/providers/aws/lambda-function";
-import { LambdaPermission } from "./.gen/providers/aws/lambda-permission";
+import * as aws from '@cdktf/provider-aws';
 
-// API Gateway
-import { ApiGatewayRestApi } from "./.gen/providers/aws/api-gateway-rest-api";
-import { ApiGatewayResource } from "./.gen/providers/aws/api-gateway-resource";
-import { ApiGatewayMethod } from "./.gen/providers/aws/api-gateway-method";
-import { ApiGatewayIntegration } from "./.gen/providers/aws/api-gateway-integration";
-import { ApiGatewayDeployment } from "./.gen/providers/aws/api-gateway-deployment";
-
-const randPrefix = "dos"
+const randPrefix = "edu"
 
 interface LambdaFunctionConfig {
-  name: string,
   path: string,
   handler: string,
   runtime: string,
@@ -46,14 +32,14 @@ class LambdaStack extends TerraformStack {
   constructor(scope: Construct, name: string, config: LambdaFunctionConfig) {
     super(scope, name);
 
-    const bucketName = `learn-terraform-cdktf-${config.name}-${randPrefix}`;
+    const bucketName = `learn-terraform-cdktf-${name}-${randPrefix}`;
 
-    new AwsProvider(this, "provider", {
+    new aws.AwsProvider(this, "provider", {
       region: "us-west-2",
     });
 
     // Create S3 bucket that hosts Lambda executable
-    const bucket = new S3Bucket(this, `${config.name}-bucket`, {
+    const bucket = new aws.S3Bucket(this, `${name}-bucket`, {
       bucket: bucketName,
     });
 
@@ -64,88 +50,44 @@ class LambdaStack extends TerraformStack {
     });
 
     // Upload Lambda zip file to newly created S3 bucket
-    const lambdaArchive = new S3BucketObject(this, `${config.name}-lambda-archive`, {
+    const lambdaArchive = new aws.S3BucketObject(this, `${name}-lambda-archive`, {
       bucket: bucket.bucket,
       key: `${config.version}/${asset.fileName}`,
       source: asset.path, // returns a posix path
     });
 
     // Create Lambda role
-    const lambdaExec = new IamRole(this, "lambda-exec", {
-      name: `learn-cdktf-lambda-${config.name}`,
+    const role = new aws.IamRole(this, "lambda-exec", {
+      name: `learn-cdktf-${name}`,
       assumeRolePolicy: JSON.stringify(lambdaRolePolicy)
     })
 
     // Create Lambda function
-    const lambdaFunc = new LambdaFunction(this, `learn-cdktf-lambda-${config.name}`, {
-      functionName: `learn-cdktf-lambda-${config.name}`,
+    const lambdaFunc = new aws.LambdaFunction(this, `learn-cdktf-lambda-${name}`, {
+      functionName: `learn-cdktf-${name}`,
       s3Bucket: bucket.bucket,
       s3Key: lambdaArchive.key,
       handler: config.handler,
       runtime: config.runtime,
-      role: lambdaExec.arn
+      role: role.arn
     });
 
     // Create and configure API gateway
-    const gateWayRestApi = new ApiGatewayRestApi(this, config.name, {
+    const api = new aws.Apigatewayv2Api(this, `api-gw-${name}`, {
       name: name,
-      description: "Terraform Serverless Application Example"
-    });
-
-    const gatewayResourceProxy = new ApiGatewayResource(this, `${config.name}-proxy`, {
-      restApiId: gateWayRestApi.id,
-      parentId: gateWayRestApi.rootResourceId,
-      pathPart: "{proxy+}"
+      protocolType: "HTTP",
+      target: lambdaFunc.arn
     })
 
-    const gatewayMethodProxy = new ApiGatewayMethod(this, `${config.name}-method-proxy`, {
-      restApiId: gateWayRestApi.id,
-      resourceId: gatewayResourceProxy.id,
-      httpMethod: "ANY",
-      authorization: "NONE"
-    })
-
-    const gatewayIntegrationLambda = new ApiGatewayIntegration(this, `${config.name}-lambda`, {
-      restApiId: gateWayRestApi.id,
-      resourceId: gatewayMethodProxy.resourceId,
-      httpMethod: gatewayMethodProxy.httpMethod,
-      integrationHttpMethod: "POST",
-      type: "AWS_PROXY",
-      uri: lambdaFunc.invokeArn
-    })
-
-    const gatewayMethodProxyRoot = new ApiGatewayMethod(this, `${config.name}-proxy-root`, {
-      restApiId: gateWayRestApi.id,
-      resourceId: gateWayRestApi.rootResourceId,
-      httpMethod: "ANY",
-      authorization: "NONE"
-    })
-
-    const gatewayIntegrationLambdaRoot = new ApiGatewayIntegration(this, `${config.name}-lambda-root`, {
-      restApiId: gateWayRestApi.id,
-      resourceId: gatewayMethodProxyRoot.resourceId,
-      httpMethod: gatewayMethodProxyRoot.httpMethod,
-      integrationHttpMethod: "POST",
-      type: "AWS_PROXY",
-      uri: lambdaFunc.invokeArn
-    })
-
-    const gatewayDeployment = new ApiGatewayDeployment(this, `${config.name}-deployment`, {
-      restApiId: gateWayRestApi.id,
-      stageName: config.stageName,
-      dependsOn: [gatewayIntegrationLambda, gatewayIntegrationLambdaRoot],
-    })
-
-    new LambdaPermission(this, `${config.name}-apigw`, {
-      statementId: "AllowAPIGatewayInvoke",
-      action: "lambda:InvokeFunction",
+    new aws.LambdaPermission(this, `${name}-apigw`, {
       functionName: lambdaFunc.functionName,
+      action: "lambda:InvokeFunction",
       principal: "apigateway.amazonaws.com",
-      sourceArn: `${gateWayRestApi.executionArn}/*/*`,
+      sourceArn: `${api.executionArn}/*/*`,
     })
 
-    new TerraformOutput(this, 'base_url', {
-      value: gatewayDeployment.invokeUrl
+    new TerraformOutput(this, 'url', {
+      value: api.apiEndpoint
     });
 
   }
@@ -153,8 +95,7 @@ class LambdaStack extends TerraformStack {
 
 const app = new App();
 
-new LambdaStack(app, 'hello-world', {
-  name: "lambda-hello-world",
+new LambdaStack(app, 'lambda-hello-world', {
   path: "../lambda-hello-world/dist",
   handler: "index.handler",
   runtime: "nodejs10.x",
@@ -162,8 +103,7 @@ new LambdaStack(app, 'hello-world', {
   version: "v0.0.1"
 });
 
-new LambdaStack(app, 'hello-name', {
-  name: "lambda-hello-name",
+new LambdaStack(app, 'lambda-hello-name', {
   path: "../lambda-hello-name/dist",
   handler: "index.handler",
   runtime: "nodejs10.x",
