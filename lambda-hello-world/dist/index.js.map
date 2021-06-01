@@ -1,1 +1,7 @@
-{"version":3,"file":"index.js","sourceRoot":"","sources":["../src/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAEO,IAAM,OAAO,GAAG;;QACnB,sBAAO;gBACH,UAAU,EAAE,GAAG;gBACf,OAAO,EAAE;oBACL,cAAc,EAAE,0BAA0B;iBAC7C;gBACD,IAAI,EAAE,qBAAqB;aAC9B,EAAA;;KACJ,CAAA;AARY,QAAA,OAAO,WAQnB"}
+{
+  "version": 3,
+  "sources": ["../src/index.ts"],
+  "sourcesContent": ["import { APIGatewayProxyResult } from \"aws-lambda\";\n\nexport const handler = async (): Promise<APIGatewayProxyResult> => {\n    return {\n        statusCode: 200,\n        headers: {\n            'Content-Type': 'text/html; charset=utf-8',\n        },\n        body: `<p>Hello world!</p>`,\n    }\n}\n"],
+  "mappings": ";;;;;;;;AAAA;AAAA;AAAA;AAAA;AAEO,IAAM,UAAU,YAA4C;AAC/D,SAAO;AAAA,IACH,YAAY;AAAA,IACZ,SAAS;AAAA,MACL,gBAAgB;AAAA;AAAA,IAEpB,MAAM;AAAA;AAAA;",
+  "names": []
+}

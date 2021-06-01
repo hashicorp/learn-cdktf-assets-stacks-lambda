@@ -1,8 +1,10 @@
 import * as path from "path";
 import { Construct } from "constructs";
-import { App, TerraformStack, TerraformAsset, AssetType, TerraformOutput } from "cdktf";
+import { App, TerraformStack, TerraformOutput } from "cdktf";
 
 import * as aws from '@cdktf/provider-aws';
+
+import { NodejsFunction } from './lib/nodejs-lambda'
 
 interface LambdaFunctionConfig {
   path: string,
@@ -34,11 +36,15 @@ class LambdaStack extends TerraformStack {
       region: "us-west-2",
     });
 
-    // Create Lambda executable
-    const asset = new TerraformAsset(this, "lambda-asset", {
-      path: path.resolve(__dirname, config.path),
-      type: AssetType.ARCHIVE, // if left empty it infers directory and file
-    });
+    const helloWorld = new NodejsFunction(this, 'hello-world', {
+      handler: 'index.foo',
+      path: path.join(__dirname, '..', 'lambda-hello-world')
+    })
+
+    const helloName = new NodejsFunction(this, 'hello-name', {
+      handler: 'index.foo',
+      path: path.join(__dirname, '..', 'lambda-hello-name')
+    })
 
     // Create unique S3 bucket that hosts Lambda executable
     const bucket = new aws.S3Bucket(this, "bucket", {
@@ -48,9 +54,17 @@ class LambdaStack extends TerraformStack {
     // Upload Lambda zip file to newly created S3 bucket
     const lambdaArchive = new aws.S3BucketObject(this, "lambda-archive", {
       bucket: bucket.bucket,
-      key: `${config.version}/${asset.fileName}`,
-      source: asset.path, // returns a posix path
+      key: `${config.version}/${helloWorld.asset.fileName}`,
+      source: helloWorld.asset.path, // returns a posix path
     });
+
+    // Upload Lambda zip file to newly created S3 bucket
+    new aws.S3BucketObject(this, "lambda-archive1", {
+      bucket: bucket.bucket,
+      key: `${config.version}/${helloName.asset.fileName}`,
+      source: helloName.asset.path, // returns a posix path
+    });
+
 
     // Create Lambda role
     const role = new aws.IamRole(this, "lambda-exec", {
