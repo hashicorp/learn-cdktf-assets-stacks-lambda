@@ -58,6 +58,12 @@ class LambdaStack extends TerraformStack {
       assumeRolePolicy: JSON.stringify(lambdaRolePolicy)
     })
 
+    // Add execution role for lambda to write to CloudWatch logs
+    new aws.IamRolePolicyAttachment(this, "lambda-managed-policy", {
+      policyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+      role: role.name
+    })
+
     // Create Lambda function
     const lambdaFunc = new aws.LambdaFunction(this, "learn-cdktf-lambda", {
       functionName: `learn-cdktf-${name}`,
