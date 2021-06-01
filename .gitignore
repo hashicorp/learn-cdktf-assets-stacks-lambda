@@ -11,3 +11,6 @@
 node_modules
 cdktf.out
 .gen
+
+!lambda-hello-world/dist/*
+!lambda-hello-name/dist/*

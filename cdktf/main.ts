@@ -32,21 +32,22 @@ class LambdaStack extends TerraformStack {
   constructor(scope: Construct, name: string, config: LambdaFunctionConfig) {
     super(scope, name);
 
-    const bucketName = `learn-terraform-cdktf-${name}-${randPrefix}`;
-
     new aws.AwsProvider(this, "provider", {
       region: "us-west-2",
-    });
-
-    // Create S3 bucket that hosts Lambda executable
-    const bucket = new aws.S3Bucket(this, `${name}-bucket`, {
-      bucket: bucketName,
     });
 
     // Create Lambda executable
     const asset = new TerraformAsset(this, "lambda-asset", {
       path: path.resolve(__dirname, config.path),
       type: AssetType.ARCHIVE, // if left empty it infers directory and file
+    });
+
+    // Unique bucket name
+    const bucketName = `learn-terraform-cdktf-${name}-${randPrefix}`;
+
+    // Create S3 bucket that hosts Lambda executable
+    const bucket = new aws.S3Bucket(this, `${name}-bucket`, {
+      bucket: bucketName,
     });
 
     // Upload Lambda zip file to newly created S3 bucket
@@ -100,7 +101,7 @@ new LambdaStack(app, 'lambda-hello-world', {
   handler: "index.handler",
   runtime: "nodejs10.x",
   stageName: "hello-world",
-  version: "v0.0.1"
+  version: "v0.0.2"
 });
 
 new LambdaStack(app, 'lambda-hello-name', {
