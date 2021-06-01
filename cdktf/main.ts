@@ -4,8 +4,6 @@ import { App, TerraformStack, TerraformAsset, AssetType, TerraformOutput } from 
 
 import * as aws from '@cdktf/provider-aws';
 
-const randPrefix = "edu"
-
 interface LambdaFunctionConfig {
   path: string,
   handler: string,
@@ -42,16 +40,13 @@ class LambdaStack extends TerraformStack {
       type: AssetType.ARCHIVE, // if left empty it infers directory and file
     });
 
-    // Unique bucket name
-    const bucketName = `learn-terraform-cdktf-${name}-${randPrefix}`;
-
-    // Create S3 bucket that hosts Lambda executable
-    const bucket = new aws.S3Bucket(this, `${name}-bucket`, {
-      bucket: bucketName,
+    // Create unique S3 bucket that hosts Lambda executable
+    const bucket = new aws.S3Bucket(this, "bucket", {
+      bucketPrefix: `learn-cdktf-${name}`,
     });
 
     // Upload Lambda zip file to newly created S3 bucket
-    const lambdaArchive = new aws.S3BucketObject(this, `${name}-lambda-archive`, {
+    const lambdaArchive = new aws.S3BucketObject(this, "lambda-archive", {
       bucket: bucket.bucket,
       key: `${config.version}/${asset.fileName}`,
       source: asset.path, // returns a posix path
@@ -64,7 +59,7 @@ class LambdaStack extends TerraformStack {
     })
 
     // Create Lambda function
-    const lambdaFunc = new aws.LambdaFunction(this, `learn-cdktf-lambda-${name}`, {
+    const lambdaFunc = new aws.LambdaFunction(this, "learn-cdktf-lambda", {
       functionName: `learn-cdktf-${name}`,
       s3Bucket: bucket.bucket,
       s3Key: lambdaArchive.key,
@@ -74,13 +69,13 @@ class LambdaStack extends TerraformStack {
     });
 
     // Create and configure API gateway
-    const api = new aws.Apigatewayv2Api(this, `api-gw-${name}`, {
+    const api = new aws.Apigatewayv2Api(this, "api-gw", {
       name: name,
       protocolType: "HTTP",
       target: lambdaFunc.arn
     })
 
-    new aws.LambdaPermission(this, `${name}-apigw`, {
+    new aws.LambdaPermission(this, "apigw-lambda", {
       functionName: lambdaFunc.functionName,
       action: "lambda:InvokeFunction",
       principal: "apigateway.amazonaws.com",
