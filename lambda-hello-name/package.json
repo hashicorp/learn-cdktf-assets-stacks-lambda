@@ -1,6 +1,7 @@
 {
-  "name": "lambda-hello-name",
-  "version": "1.0.0",
+  "name": "@cdktf-lambda-demo/lambda-hello-name",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
     "compile": "tsc"
   },

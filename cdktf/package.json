@@ -1,6 +1,6 @@
 {
-  "name": "cdktf",
-  "version": "1.0.0",
+  "name": "@cdktf-lambda-demo/stack",
+  "version": "0.0.0",
   "main": "main.js",
   "types": "main.ts",
   "license": "MPL-2.0",
