@@ -14,3 +14,5 @@ cdktf.out
 
 !lambda-hello-world/dist/*
 !lambda-hello-name/dist/*
+
+node_modules
