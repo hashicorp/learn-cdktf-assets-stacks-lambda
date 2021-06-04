@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import { App, TerraformStack, TerraformAsset, AssetType, TerraformOutput } from "cdktf";
 
 import * as aws from '@cdktf/provider-aws';
+import * as random from './.gen/providers/random';
 
 interface LambdaFunctionConfig {
   path: string,
@@ -34,6 +35,11 @@ class LambdaStack extends TerraformStack {
       region: "us-west-2",
     });
 
+    // Create random value
+    const pet = new random.Pet(this, "random-name", {
+      length: 2,
+    })
+
     // Create Lambda executable
     const asset = new TerraformAsset(this, "lambda-asset", {
       path: path.resolve(__dirname, config.path),
@@ -54,7 +60,7 @@ class LambdaStack extends TerraformStack {
 
     // Create Lambda role
     const role = new aws.IamRole(this, "lambda-exec", {
-      name: `learn-cdktf-${name}`,
+      name: `learn-cdktf-${name}-${pet.id}`,
       assumeRolePolicy: JSON.stringify(lambdaRolePolicy)
     })
 
@@ -66,7 +72,7 @@ class LambdaStack extends TerraformStack {
 
     // Create Lambda function
     const lambdaFunc = new aws.LambdaFunction(this, "learn-cdktf-lambda", {
-      functionName: `learn-cdktf-${name}`,
+      functionName: `learn-cdktf-${name}-${pet.id}`,
       s3Bucket: bucket.bucket,
       s3Key: lambdaArchive.key,
       handler: config.handler,
