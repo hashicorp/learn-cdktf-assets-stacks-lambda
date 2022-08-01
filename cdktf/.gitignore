@@ -6,3 +6,6 @@ cdktf.log
 *terraform.*.tfstate*
 .gen
 .terraform
+tsconfig.tsbuildinfo
+!jest.config.js
+!setup.js

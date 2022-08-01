@@ -3,7 +3,7 @@ import { Construct } from "constructs";
 import { App, TerraformStack, TerraformAsset, AssetType, TerraformOutput } from "cdktf";
 
 import * as aws from "@cdktf/provider-aws";
-import * as random from "./.gen/providers/random";
+import * as random from "@cdktf/provider-random";
 
 interface LambdaFunctionConfig {
   path: string,
