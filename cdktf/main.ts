@@ -31,14 +31,14 @@ class LambdaStack extends TerraformStack {
   constructor(scope: Construct, name: string, config: LambdaFunctionConfig) {
     super(scope, name);
 
-    new aws.AwsProvider(this, "aws", {
+    new aws.provider.AwsProvider(this, "aws", {
       region: "us-west-2",
     });
 
-    new random.RandomProvider(this, "random");
+    new random.provider.RandomProvider(this, "random");
 
     // Create random value
-    const pet = new random.Pet(this, "random-name", {
+    const pet = new random.pet.Pet(this, "random-name", {
       length: 2,
     });
 
@@ -49,31 +49,31 @@ class LambdaStack extends TerraformStack {
     });
 
     // Create unique S3 bucket that hosts Lambda executable
-    const bucket = new aws.s3.S3Bucket(this, "bucket", {
+    const bucket = new aws.s3Bucket.S3Bucket(this, "bucket", {
       bucketPrefix: `learn-cdktf-${name}`,
     });
 
     // Upload Lambda zip file to newly created S3 bucket
-    const lambdaArchive = new aws.s3.S3Object(this, "lambda-archive", {
+    const lambdaArchive = new aws.s3Object.S3Object(this, "lambda-archive", {
       bucket: bucket.bucket,
       key: `${config.version}/${asset.fileName}`,
       source: asset.path, // returns a posix path
     });
 
     // Create Lambda role
-    const role = new aws.iam.IamRole(this, "lambda-exec", {
+    const role = new aws.iamRole.IamRole(this, "lambda-exec", {
       name: `learn-cdktf-${name}-${pet.id}`,
       assumeRolePolicy: JSON.stringify(lambdaRolePolicy)
     });
 
     // Add execution role for lambda to write to CloudWatch logs
-    new aws.iam.IamRolePolicyAttachment(this, "lambda-managed-policy", {
+    new aws.iamRolePolicyAttachment.IamRolePolicyAttachment(this, "lambda-managed-policy", {
       policyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
       role: role.name
     });
 
     // Create Lambda function
-    const lambdaFunc = new aws.lambdafunction.LambdaFunction(this, "learn-cdktf-lambda", {
+    const lambdaFunc = new aws.lambdaFunction.LambdaFunction(this, "learn-cdktf-lambda", {
       functionName: `learn-cdktf-${name}-${pet.id}`,
       s3Bucket: bucket.bucket,
       s3Key: lambdaArchive.key,
@@ -83,13 +83,13 @@ class LambdaStack extends TerraformStack {
     });
 
     // Create and configure API gateway
-    const api = new aws.apigatewayv2.Apigatewayv2Api(this, "api-gw", {
+    const api = new aws.apigatewayv2Api.Apigatewayv2Api(this, "api-gw", {
       name: name,
       protocolType: "HTTP",
       target: lambdaFunc.arn
     });
 
-    new aws.lambdafunction.LambdaPermission(this, "apigw-lambda", {
+    new aws.lambdaPermission.LambdaPermission(this, "apigw-lambda", {
       functionName: lambdaFunc.functionName,
       action: "lambda:InvokeFunction",
       principal: "apigateway.amazonaws.com",
