@@ -68,9 +68,9 @@ class MyStack extends TerraformStack {
     })
 
     // Upload Lambda zip file to newly created S3 bucket
-    const lambdaArchive = new aws.S3BucketObject(this, `${config.name}-lambda-archive`, {
+    const lambdaArchive = new aws.S3BucketObject(this, `${config.name}-lambda-archive-${nodeJsFunction.asset.assetHash}`, {
       bucket: bucket.bucket,
-      key: `${config.name}/${config.version}`,
+      key: `${config.name}-lambda-archive-${nodeJsFunction.asset.assetHash}`,
       source: nodeJsFunction.asset.path, // returns a posix path
     });
 
