@@ -11,7 +11,6 @@ interface LambdaFunctionConfig {
   path: string,
   handler: string,
   runtime: string,
-  stageName: string,
   version: string,
 }
 
@@ -42,26 +41,52 @@ class MyStack extends TerraformStack {
       bucketPrefix: `learn-cdktf-${name}`,
     });
 
-    this.addLambda(bucket, {
-      name: "lambda-hello-world",
-      path: "../lambda-hello-world/dist",
-      handler: "index.handler",
-      runtime: "nodejs16.x",
-      stageName: "hello-world",
-      version: "v0.0.2"
+    // Create and configure API gateway
+    const api = new aws.ApiGatewayRestApi(this, `${name}-api-gw`, {
+      name: name,
+      endpointConfiguration: [
+        {
+          types: ["REGIONAL"]
+        }
+      ]
     })
 
-    this.addLambda(bucket, {
-      name: 'lambda-hello-name',
-      path: "../lambda-hello-name/dist",
-      handler: "index.handler",
-      runtime: "nodejs16.x",
-      stageName: "hello-name",
-      version: "v0.0.1"
+    let lambdas = [
+      this.addLambda(bucket, api, {
+        name: "lambda-hello-world",
+        path: "../lambda-hello-world/dist",
+        handler: "index.handler",
+        runtime: "nodejs16.x",
+        version: "v0.0.2"
+      }),
+      this.addLambda(bucket, api, {
+        name: 'lambda-hello-name',
+        path: "../lambda-hello-name/dist",
+        handler: "index.handler",
+        runtime: "nodejs16.x",
+        version: "v0.0.1"
+      })
+    ]
+
+    const deployment = new aws.ApiGatewayDeployment(this, `${name}-deployment`, {
+      restApiId: api.id,
+      dependsOn: lambdas.map(it => it.integration)
+    })
+
+    const stage = new aws.ApiGatewayStage(this, `${name}-stage`, {
+      deploymentId: deployment.id,
+      restApiId: api.id,
+      stageName: "prod"
+    })
+
+    lambdas.map(it => it.proxy).forEach((proxy) => {
+      new TerraformOutput(this, proxy.pathPart, {
+        value: `${deployment.invokeUrl}${stage.stageName}${proxy.path}`,
+      })
     })
   }
 
-  addLambda(bucket: aws.S3Bucket, config: LambdaFunctionConfig) {
+  addLambda(bucket: aws.S3Bucket, api: aws.ApiGatewayRestApi, config: LambdaFunctionConfig) {
     const nodeJsFunction = new NodejsFunction(this, `${config.name}-nodejs`, {
       handler: 'index.foo',
       path: path.join(__dirname, '..', config.name)
@@ -96,27 +121,40 @@ class MyStack extends TerraformStack {
       role: role.arn
     });
 
-    // Create and configure API gateway
-    const api = new aws.Apigatewayv2Api(this, `${config.name}-api-gw`, {
-      name: config.name,
-      protocolType: "HTTP",
-      target: lambdaFunc.arn
+    // create gateway items
+    const proxy = new aws.ApiGatewayResource(this, `${config.name}-proxy`, {
+      restApiId: api.id,
+      parentId: api.rootResourceId,
+      pathPart: `${config.name}`,
     })
 
+    const proxyMethod = new aws.ApiGatewayMethod(this, `${config.name}-proxy-method`, {
+      restApiId: api.id,
+      resourceId: proxy.id,
+      authorization: 'NONE',
+      httpMethod: 'ANY'
+    })
+
+    const integration = new aws.ApiGatewayIntegration(this, `${config.name}-proxy-integration`, {
+      httpMethod: proxyMethod.httpMethod,
+      resourceId: proxy.id,
+      restApiId: api.id,
+      type: 'AWS_PROXY',
+      integrationHttpMethod: 'POST', // lambda requires POST
+      uri: lambdaFunc.invokeArn
+    })
+
+    // add permission to invoke lambda from API gateway
     new aws.LambdaPermission(this, `${config.name}-apigw-permission`, {
       functionName: lambdaFunc.functionName,
       action: "lambda:InvokeFunction",
       principal: "apigateway.amazonaws.com",
-
       sourceArn: `${api.executionArn}/*/*`,
     })
 
-    new TerraformOutput(this, `${config.name}-url`, {
-      value: api.apiEndpoint
-    });
+    return { integration, proxy }
   }
 }
-
 
 const app = new App();
 
