@@ -17,6 +17,6 @@ export const handler = async (
         headers: {
             'Content-Type': 'text/html; charset=utf-8',
         },
-        body: `<p>Hello ${name}!</p>`,
+        body: `<p>Hello from update3, ${name}!</p>`,
     }
 }

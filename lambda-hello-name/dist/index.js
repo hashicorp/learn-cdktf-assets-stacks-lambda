@@ -23,7 +23,7 @@ var handler = async (event) => {
     headers: {
       "Content-Type": "text/html; charset=utf-8"
     },
-    body: `<p>Hello ${name}!</p>`
+    body: `<p>Hello from update3, ${name}!</p>`
   };
 };
 // Annotate the CommonJS export names for ESM import in node:
